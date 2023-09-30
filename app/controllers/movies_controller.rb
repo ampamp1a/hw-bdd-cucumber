@@ -11,7 +11,7 @@ class MoviesController < ApplicationController
       movie = find_movie[0]
       @release_date = movie.release_date
       @name = movie.title 
-      redirect_to new_movie_path( name:@name,date:@release_date)
+      redirect_to new_movie_path(movie:{title:@name,release_date:@release_date})
 
     else
       redirect_to movies_path
@@ -36,10 +36,13 @@ class MoviesController < ApplicationController
   end
 
   def new
-    # default: render 'new' template
-    @movie_title = params[:name]
-    @movie_rate = params[:rate] 
-    @movie_date = params[:date] || Date.today.strftime()
+    if params[:movie]
+      @movie = Movie.new(movie_params)
+    end
+    # # default: render 'new' template
+    # @movie_title = params[:name]
+    # @movie_rate = params[:rate] 
+    # @movie_date = params[:date] || Date.today.strftime()
   end
 
   def create
