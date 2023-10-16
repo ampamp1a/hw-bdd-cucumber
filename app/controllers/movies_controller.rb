@@ -1,43 +1,45 @@
-Tmdb::Api.key(ENV["Api_TMDB"])
-
+Tmdb::Api.key(ENV['Api_TMDB'])
 class MoviesController < ApplicationController
   before_action :force_index_redirect, only: [:index]
 
   # def search_tmdb
-    
-  #   @movie_name = params[:movie][:title]
+  #   @movie_name = params.dig(:movie, :title)
   #   find_movie = Tmdb::Movie.find(@movie_name)
-  #   if !find_movie.empty?
-  #     movie = find_movie[0]
-  #     @release_date = movie.release_date
-  #     @name = movie.title 
-  #     redirect_to new_movie_path(movie:{title:@name,release_date:@release_date})
 
+  #   if find_movie.present?
+  #     handle_found_movie(find_movie.first)
   #   else
-  #     redirect_to movies_path
+  #     redirect_to_movies_path
   #     flash[:notice] = " '#{@movie_name}' was not found in TMDb."
   #   end
   # end
   def search_tmdb
     @movie_name = params.dig(:movie, :title)
-    find_movie = Tmdb::Movie.find(@movie_name)
+    find_movie_and_redirect(@movie_name)
+  end
+  def find_movie_and_redirect(movie_name)
+    find_movie = Tmdb::Movie.find(movie_name)
 
     if find_movie.present?
       handle_found_movie(find_movie.first)
     else
-      redirect_to_movies_path
-      flash[:notice] = " '#{@movie_name}' was not found in TMDb."
+      handle_movie_not_found
     end
   end
 
-  private
+  def handle_found_movie(movie)
+    @name = movie.title
+    @release_date = movie.release_date
+    redirect_to_new_movie(@name,@release_date)
+  end
 
+  def handle_movie_not_found
+    redirect_to movies_path
+    flash[:notice] = " '#{@movie_name}' was not found in TMDb."
+  end
 
-  def handle_found_movie(first_movie)
-    @release_date = first_movie.release_date
-    @name = first_movie.title
-    # redirect_to_new_movie
-    redirect_to new_movie_path(movie: { title: @name, release_date: @release_date })
+  def redirect_to_new_movie(titlem, release_datem)
+    redirect_to new_movie_path(movie: { title: titlem, release_date: release_datem })
   end
   
   def show
@@ -51,18 +53,14 @@ class MoviesController < ApplicationController
     @movies = Movie.with_ratings(ratings_list, sort_by)
     @ratings_to_show_hash = ratings_hash
     @sort_by = sort_by
-  end
-  def store_settings_in_session
-        # remember the correct settings for next time
-        session['ratings'] = ratings_list
-        session['sort_by'] = @sort_by
+    store_settings_in_session
   end
 
   def new
     if params[:movie]
       @movie = Movie.new(movie_params)
     end
-    # # default: render 'new' template
+    # default: render 'new' template
     # @movie_title = params[:name]
     # @movie_rate = params[:rate] 
     # @movie_date = params[:date] || Date.today.strftime()
@@ -93,6 +91,18 @@ class MoviesController < ApplicationController
   end
 
   private
+
+  # def handle_found_movie(first_movie)
+  #   @release_date = first_movie.release_date
+  #   @name = first_movie.title
+  #   # redirect_to_new_movie
+  #   redirect_to new_movie_path(movie: { title: @name, release_date: @release_date })
+  # end
+  
+  def store_settings_in_session
+    session['ratings'] = ratings_list
+    session['sort_by'] = @sort_by
+  end
 
   def force_index_redirect
     if !params.key?(:ratings) || !params.key?(:sort_by)
